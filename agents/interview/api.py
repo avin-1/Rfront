@@ -1,16 +1,21 @@
+print("DEBUG: Starting interview_api imports...", flush=True)
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+print("DEBUG: Flask imported", flush=True)
 import datetime
 from interview_database import InterviewDatabase
+print("DEBUG: InterviewDatabase imported", flush=True)
 import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+print("DEBUG: Google libs imported", flush=True)
 from dotenv import load_dotenv
 import sqlite3
 import logging
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
+print("DEBUG: Google auth libs imported", flush=True)
 from datetime import time as dtime
 import uuid
 import pytz
@@ -20,6 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+print("DEBUG: All imports done", flush=True)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("interview_api")
@@ -233,7 +239,9 @@ def get_google_calendar_availability(hr_email, days=5):
     except Exception as e:
         return f"Error fetching availability: {str(e)}"
 
+print("DEBUG: Initializing InterviewDatabase...", flush=True)
 db = InterviewDatabase()
+print("DEBUG: InterviewDatabase initialized", flush=True)
 
 @app.before_request
 def log_request_info():

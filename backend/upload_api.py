@@ -9,15 +9,16 @@ import math
 from email_service import EmailService
 try:
     # Optional advanced scoring imports
+    # Optional advanced scoring imports
     from agents.resumeandmatching.utils.resume_parser import parse_resume as _parse_resume
-    from agents.resumeandmatching.utils.matcher import semantic_match as _semantic_match
-    from agents.resumeandmatching.utils.llm_scorer import compute_score as _llm_score
+    # from agents.resumeandmatching.utils.matcher import semantic_match as _semantic_match # Lazy load
+    # from agents.resumeandmatching.utils.llm_scorer import compute_score as _llm_score # Lazy load
     _ADVANCED_SCORING = True
 except Exception:
     _ADVANCED_SCORING = False
     _parse_resume = None
-    _semantic_match = None
-    _llm_score = None
+    # _semantic_match = None
+    # _llm_score = None
 import fitz  # PyMuPDF (fallback text extraction)
 
 # Load .env explicitly
@@ -230,18 +231,6 @@ def apply_job():
                     resume_text = "".join(p.get_text() for p in d)
                     d.close()
                 except Exception:
-                    resume_text = ""
-
-            score_val = 0.0
-            if resume_text and jd_text:
-                if _ADVANCED_SCORING and _semantic_match is not None and _llm_score is not None:
-                    sem = _semantic_match(resume_text, jd_text, "all-MiniLM-L6-v2")  # 0..1
-                    llm = _llm_score(resume_text, jd_text, "openai/gpt-oss-20b:fireworks-ai")  # 0..100 (fallback inside if no token)
-                    score_val = 0.5 * (sem * 100.0) + 0.5 * llm
-                else:
-                    # Lightweight heuristic fallback
-                    r_set = set(resume_text.lower().split())
-                    j_set = set(jd_text.lower().split())
                     overlap = len(r_set & j_set)
                     base = len(j_set) or 1
                     score_val = 100.0 * overlap / base
