@@ -51,7 +51,7 @@ except Exception as e:
 
 # Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})  # enable CORS for all routes
+CORS(app, resources={r"/*": {"origins": "*", "allow_headers": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
 
 # Initialize email service
 email_service = EmailService()

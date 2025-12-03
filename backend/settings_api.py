@@ -14,7 +14,7 @@ from backend.prompt_manager import prompt_manager
 # from backend.monitoring_feedback_agent import monitoring_agent, feedback_agent # Moved to lazy load
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*", "allow_headers": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
 
 @app.route('/api/settings/agents', methods=['GET'])
 def get_agents():

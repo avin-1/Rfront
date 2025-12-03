@@ -32,7 +32,7 @@ def get_shortlisting_agent():
     return shortlisting_agent
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*", "allow_headers": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
 
 # Initialize services
 test_service = TestService()
