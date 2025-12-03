@@ -60,11 +60,11 @@ This guide outlines the steps to deploy your application using a hybrid approach
 
 ## 3. Troubleshooting
 
-### CORS Errors
-If you see CORS errors in the browser console:
-1.  Ensure you have redeployed the **Backend** on Render after the latest code changes.
-2.  The backend is now configured to allow requests from any origin (`*`) with all headers allowed.
-3.  Check that your `VITE_API_URL` variables in Vercel do **not** have a trailing slash (e.g., `https://your-app.onrender.com` is correct, `https://your-app.onrender.com/` might cause issues with some routers).
+### CORS Errors / 404 Not Found
+If you see CORS errors or 404 errors for `/notifications` or `/tests`:
+1.  **Redeploy the Frontend** on Vercel. I have updated the code (`apiConfig.js`) to automatically handle the API path prefixes.
+2.  Ensure you have redeployed the **Backend** on Render after the latest code changes.
+3.  The backend is now configured to allow requests from any origin (`*`) with all headers allowed.
 
 ## 4. Verification
 
