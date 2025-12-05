@@ -31,9 +31,9 @@ import {
   Save,
   Brain
 } from 'lucide-react';
-import { SHORTLISTING_API_BASE } from '@/lib/apiConfig';
+import { SETTINGS_API_BASE } from '@/lib/apiConfig';
 
-const API_BASE_URL = SHORTLISTING_API_BASE;
+const API_BASE_URL = SETTINGS_API_BASE;
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
@@ -155,8 +155,8 @@ const Settings = () => {
                   key={agent}
                   onClick={() => setSelectedAgent(agent)}
                   className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center justify-between ${selectedAgent === agent
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200 font-medium'
-                      : 'hover:bg-gray-50 text-gray-700 border border-transparent'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200 font-medium'
+                    : 'hover:bg-gray-50 text-gray-700 border border-transparent'
                     }`}
                 >
                   {agent}

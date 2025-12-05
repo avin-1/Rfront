@@ -35,14 +35,37 @@ print("Loading settings_api...", flush=True)
 from backend.settings_api import app as settings_app
 print("Loaded settings_api.", flush=True)
 
+# ... imports ...
+from flask import Flask, send_from_directory
+
+# ... existing code ...
+
+# Frontend App
+frontend_dist = os.path.join(project_root, 'front', 'dist')
+frontend_app = Flask(__name__, static_folder=frontend_dist, static_url_path='/')
+
+@frontend_app.route('/')
+def serve_index():
+    return send_from_directory(frontend_app.static_folder, 'index.html')
+
+@frontend_app.route('/<path:path>')
+def serve_static(path):
+    # Check if file exists in dist
+    full_path = os.path.join(frontend_app.static_folder, path)
+    if os.path.exists(full_path):
+        return send_from_directory(frontend_app.static_folder, path)
+    # Fallback to index.html for SPA routing
+    return send_from_directory(frontend_app.static_folder, 'index.html')
+
 def application(environ, start_response):
     """
     Custom WSGI middleware to dispatch requests to different Flask apps
-    based on the path prefix, WITHOUT stripping the prefix.
+    based on the path prefix and Accept header.
     """
     path = environ.get('PATH_INFO', '')
+    accept = environ.get('HTTP_ACCEPT', '')
     
-    # Routing logic based on analysis of route definitions
+    # 1. API Routes (Explicit prefixes)
     if path.startswith('/api/interviews'):
         return interview_app(environ, start_response)
     
@@ -53,16 +76,37 @@ def application(environ, start_response):
          path.startswith('/api/notifications') or \
          path.startswith('/api/candidates'):
         return shortlisting_app(environ, start_response)
-        
-    else:
-        # Default to upload_api for root paths (/upload, /jobs, etc.)
-        # and any other paths not matched above.
+
+    # 2. Frontend Static Assets (Vite uses /assets)
+    if path.startswith('/assets/'):
+        return frontend_app(environ, start_response)
+
+    # 3. Backend Static Files (Social Images, etc.)
+    # MUST come before root/frontend catch-all
+    if path.startswith('/static/'):
         return upload_app(environ, start_response)
+
+    # 4. Root -> Frontend
+    if path == '/':
+        return frontend_app(environ, start_response)
+
+    # 5. Collisions (/jobs, /profiles, etc.)
+    # If browser requesting HTML -> Frontend
+    if 'text/html' in accept:
+         return frontend_app(environ, start_response)
+
+    # 6. Default to upload_api for Core API routes (/upload, /apply, etc.)
+    return upload_app(environ, start_response)
+
+# Apply ProxyFix to handle headers from tunnels (ngrok, pinggy, etc.)
+# This ensures request.host_url matches the public URL, not localhost
+from werkzeug.middleware.proxy_fix import ProxyFix
+application = ProxyFix(application, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 app = application # For Gunicorn
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
     port = int(os.environ.get("PORT", 10000))
-    print(f"Starting Unified API Gateway on port {port}...")
+    print(f"Starting Unified Server (Frontend + Backend) on port {port}...")
     run_simple('0.0.0.0', port, application, use_reloader=True)

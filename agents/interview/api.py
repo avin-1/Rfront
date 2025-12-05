@@ -42,6 +42,15 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")  # Optional, for service account
 
+# Fix for path resolution when running from root (wsgi.py) vs local (api.py)
+if GOOGLE_SERVICE_ACCOUNT_FILE and not os.path.isabs(GOOGLE_SERVICE_ACCOUNT_FILE):
+    # If file doesn't exist in CWD, try relative to this script
+    if not os.path.exists(GOOGLE_SERVICE_ACCOUNT_FILE):
+        _candidate_path = os.path.join(os.path.dirname(__file__), GOOGLE_SERVICE_ACCOUNT_FILE)
+        if os.path.exists(_candidate_path):
+            GOOGLE_SERVICE_ACCOUNT_FILE = _candidate_path
+            print(f"DEBUG: Resolved service account file to: {GOOGLE_SERVICE_ACCOUNT_FILE}", flush=True)
+
 # OAuth Installed App helper (uses credentials.json and token.json in same folder)
 CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), 'credentials.json')
 TOKEN_FILE = os.path.join(os.path.dirname(__file__), 'token.json')

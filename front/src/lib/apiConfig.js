@@ -10,6 +10,10 @@ const buildBase = (envValue, localPort, remoteBasePath = '/api') => {
     base = envValue;
   } else if (isLocalhost()) {
     base = `http://localhost:${localPort}`;
+  } else {
+    // If not localhost (e.g. ngrok), use relative path
+    // This allows the frontend to work on any domain
+    return remoteBasePath || '';
   }
 
   // Ensure base doesn't end with slash to avoid double slashes
@@ -22,7 +26,7 @@ const buildBase = (envValue, localPort, remoteBasePath = '/api') => {
   // A simple heuristic: if base doesn't contain '/api' and remoteBasePath starts with '/api', append it.
   // However, for CORE_API_BASE, remoteBasePath is empty.
 
-  if (remoteBasePath && !base.includes(remoteBasePath)) {
+  if (remoteBasePath && !base.includes(remoteBasePath) && base.startsWith('http')) {
     return `${base}${remoteBasePath}`;
   }
 

@@ -51,6 +51,122 @@ def get_agent_prompts(agent_name):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/settings/prompts', methods=['GET'])
+def get_all_prompts_for_ui():
+    """Get all prompts for all agents, formatted for Settings.jsx"""
+    try:
+        all_prompts = prompt_manager.get_all_prompts()
+        
+        # Group by agent
+        agents_data = {}
+        for p in all_prompts:
+            agent = p['agent_name']
+            if agent not in agents_data:
+                agents_data[agent] = {
+                    'current': '', 
+                    'is_custom': False,
+                    'prompts': {}
+                }
+            
+            # Add to specific prompts map
+            if p['is_active']:
+                agents_data[agent]['prompts'][p['prompt_type']] = p['prompt_content']
+                # Check if custom (version > 1)
+                if p['version'] > 1:
+                    agents_data[agent]['is_custom'] = True
+        
+        # Construct 'current' display text (concatenate all types)
+        for agent, data in agents_data.items():
+            combined = []
+            for p_type, content in data['prompts'].items():
+                combined.append(f"--- {p_type.upper()} ---\n{content}")
+            data['current'] = "\n\n".join(combined)
+            
+        return jsonify({
+            'success': True,
+            'prompts': agents_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/settings/prompts/modify', methods=['POST'])
+def modify_prompt_ui():
+    """Modify prompt based on instruction (UI endpoint)"""
+    try:
+        data = request.get_json() or {}
+        agent_name = data.get('agent_name')
+        instruction = data.get('instruction')
+        
+        if not agent_name or not instruction:
+            return jsonify({'success': False, 'error': 'Missing agent_name or instruction'}), 400
+
+        # Lazy load feedback agent
+        from backend.monitoring_feedback_agent import feedback_agent
+        
+        # 1. Generate new prompt using LLM (simulated via feedback agent logic or direct call)
+        # For now, we'll use a direct LLM call if possible, or fallback to appending instruction
+        # Since we don't have direct LLM access here easily without duplicating code,
+        # let's try to use feedback_agent.process_feedback but force immediate application.
+        
+        # Create a feedback entry
+        feedback_id = prompt_manager.submit_feedback(agent_name, f"UI Instruction: {instruction}", "admin@redai.com")
+        
+        # Process it (this generates the modified prompt)
+        result = feedback_agent.process_feedback(agent_name, f"UI Instruction: {instruction}", "admin@redai.com")
+        
+        if result['success'] and result.get('modified_prompts'):
+            # Apply immediately
+            import json
+            mod_prompts = result['modified_prompts'] # This is a dict or list?
+            # process_feedback returns dict of {prompt_type: new_content} usually?
+            # Let's check feedback_agent.py if needed, but assuming standard flow:
+            
+            # Apply
+            apply_res = feedback_agent.apply_prompt_modifications(feedback_id, agent_name, mod_prompts)
+            if apply_res['success']:
+                return jsonify({'success': True, 'message': 'Prompt updated'})
+            else:
+                return jsonify({'success': False, 'error': 'Failed to apply changes'}), 500
+        else:
+             return jsonify({'success': False, 'error': 'Failed to generate prompt modifications'}), 500
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/settings/prompts/reset', methods=['POST'])
+def reset_prompt_ui():
+    """Reset prompt to default (UI endpoint)"""
+    try:
+        data = request.get_json() or {}
+        agent_name = data.get('agent_name')
+        
+        if not agent_name:
+            return jsonify({'success': False, 'error': 'Missing agent_name'}), 400
+            
+        # To reset, we need to know the default. 
+        # PromptManager._load_default_prompts has them hardcoded.
+        # We can re-trigger _load_default_prompts? No, that only inserts if version 1 missing.
+        # We should probably just fetch version 1 and set it as new version.
+        
+        all_prompts = prompt_manager.get_all_prompts(agent_name)
+        # Find version 1 for each type
+        defaults = {}
+        for p in all_prompts:
+            if p['version'] == 1:
+                defaults[p['prompt_type']] = p['prompt_content']
+        
+        if not defaults:
+             return jsonify({'success': False, 'error': 'Default prompts not found'}), 404
+             
+        # Update each type to default content
+        for p_type, content in defaults.items():
+            prompt_manager.update_prompt(agent_name, p_type, content, "Reset to default")
+            
+        return jsonify({'success': True, 'message': 'Prompts reset to default'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/settings/feedback', methods=['POST'])
 def submit_feedback():
     """Submit HR feedback for an agent"""
